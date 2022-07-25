@@ -225,27 +225,7 @@ def network_update(network, removenode):
                 network.remove_node(i)
 
 
-if __name__ == '__main__':
-    FILENAME = 'darp01EX.txt'
-    Setting_Info = Setting(FILENAME)
-    Setting_Info_base = Setting_Info[0]
-
-    Syaryo_max_time = Setting_Info_base[8]
-    T = int(Setting_Info_base[5])  # 時間数
-    n = int(Setting_Info[1]) + 1  # デポを含めた頂点数
-    Request = int((n - 1) / 2)  # リクエスト数
-    Distance = Setting_Info[3]  # 距離
-    e = Setting_Info[4]  # early time
-    l = Setting_Info[5]  # delay time
-    d = 10  # 乗り降りにようする時間
-    noriori = Setting_Info[6]
-
-    Time_expand = 1
-
-    kakucho = 20
-
-    genzaichi = (0, 0)
-
+def network_creat(Time_expand,kakucho):
     G = nx.Graph()  # ノード作成
     for i in range(n):
         early_time = e[i]
@@ -398,8 +378,29 @@ if __name__ == '__main__':
 
     c_edge = ['red' if G.edges[(n)]['penalty'] == 1 else 'black' for n in G.edges()]
 
+    return G
+
+if __name__ == '__main__':
+    FILENAME = 'darp01EX.txt'
+    Setting_Info = Setting(FILENAME)
+    Setting_Info_base = Setting_Info[0]
+
+    Syaryo_max_time = Setting_Info_base[8]
+    T = int(Setting_Info_base[5])  # 時間数
+    n = int(Setting_Info[1]) + 1  # デポを含めた頂点数
+    Request = int((n - 1) / 2)  # リクエスト数
+    Distance = Setting_Info[3]  # 距離
+    e = Setting_Info[4]  # early time
+    l = Setting_Info[5]  # delay time
+    d = 10  # 乗り降りにようする時間
+    noriori = Setting_Info[6]
+
+    genzaichi = (0, 0)
+    time_expand =1
+    G = network_creat(Time_expand=time_expand,kakucho=40)
+
     print(FILENAME)
-    print(Time_expand)
+    print(time_expand)
     print(nx.number_of_edges(G))
     print(nx.number_of_nodes(G))
 
