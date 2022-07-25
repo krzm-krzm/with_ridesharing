@@ -1,17 +1,15 @@
-#このファイルのコードは、ランダムで相乗り許容のルートを作成する
-
 import numpy as np
 import pandas as pd
 import networkx as nx
 import math
 from itertools import product
 import matplotlib.pyplot as plt
+import random
 
 
 def distance(x1, x2, y1, y2):
     d = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return d
-
 
 def Setting(FILENAME):
     mat = []
@@ -58,6 +56,7 @@ def Setting(FILENAME):
 
     return Setting_Info, request_number, depo_zahyo, c, e, l, noriori
 
+
 def setuzoku_node_list(dic):  # 移動できるノードの一覧辞書を返す関数、時間軸に関しては情報落ち
     node_dict = {}
     for id, info in dic.items():
@@ -80,7 +79,7 @@ def setuzoku_node_list(dic):  # 移動できるノードの一覧辞書を返す
 """
 
 
-def setuzoku_node_list2(dic, now_location, previous_location):  #dic⇒接続可能なノード先(G.adj[n])
+def setuzoku_node_list2(dic, now_location, previous_location):
     min_weight = float('inf')
     min_earlytime = float('inf')
     saitan_setuzoku_node = (0, 0)
@@ -114,7 +113,7 @@ def setuzoku_node_list2(dic, now_location, previous_location):  #dic⇒接続可
             if loop == 0:
                 if not id[0] == n:
                     if not id == previous_location and noriori[id[0]] == 1 and (id[0] in kanryo_node) == False and id[
-                        1] > now_location[1]:   #候補が以前の場所ではない & ピックアップノードである & 　挿入済みのノードではない & 現在の時間より大きいノードである
+                        1] > now_location[1]:  # 候補が以前の場所ではない & ピックアップノードである & 　挿入済みのノードではない & 現在の時間より大きいノードである
                         if check_node(id, now_location) == 1:
                             saitan_setuzoku_node = id
                             min_earlytime = id[1]
@@ -177,26 +176,6 @@ def syaryo_time_check(Loot):
         syaryo_time = Loot[-1][1] + Distance[0][Loot[-1][0]] - (Loot[0][1] - Distance[0][Loot[0][0]])
     return syaryo_time
 
-def sharing_number_count(Loot):
-    number_count=0
-    for i in Loot:
-        number_count+=noriori[i]
-
-    return  number_count
-
-"""
-関数network_updateについて
-現在地のノードを削除したらいけません→この関数は使えないかも
-一台分のルートが完成してから削除しましょう
-"""
-
-
-def network_update(network, removenode):
-    for i in list(network.nodes()):
-        for j in removenode:
-            if i[0] == j:
-                network.remove_node(i)
-
 
 '''
 return_random関数に関して
@@ -205,6 +184,7 @@ return_random関数に関して
 これから：①ピックアップノードが現在地として入力されたとき、乗車客が定員以下の場合は、ピックアップノード+これまで乗せた乗車客のドロップノードの中から選択
         ②ピックアップノードが現在地かつ乗車客が定員Maxの場合は、乗せている乗車客のドロップノードから選択⇒ここはランダムで選択しなくて良い、最も締め切り時間に近いのを選択
         ③ドロップノードが現在地のとき、ピックアップノードor今乗せている乗車客のドロップノードの中から選択
+
         例外処理：移動可能なノードがない場合デポを返す
 '''
 
@@ -228,23 +208,22 @@ def return_random(dic, now_location):
             print(random_return)
         else:
             random_return = (n, T + 1)
-    else:
-        for id, info in dic.items():
-            if id[1] > now_location[1] and not id[0] == n:
-                idou_kanou.append(id)
-                idou_list.append(id[0])
-
-        print(idou_kanou)
-        print(idou_list)
-        if not idou_kanou == []:
-            randam = random.choice(list(set(idou_list)))
-            print(randam)
-            idou_kanou = np.array(idou_kanou)
-            random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-            print(random_return)
-        else:
-            random_return = (n, T + 1)
     return random_return
+
+
+"""
+関数network_updateについて
+現在地のノードを削除したらいけません→この関数は使えないかも
+一台分のルートが完成してから削除しましょう
+"""
+
+
+def network_update(network, removenode):
+    for i in list(network.nodes()):
+        for j in removenode:
+            if i[0] == j:
+                network.remove_node(i)
+
 
 if __name__ == '__main__':
     FILENAME = 'darp01EX.txt'
@@ -263,7 +242,9 @@ if __name__ == '__main__':
 
     Time_expand = 1
 
-    kakucho =20
+    kakucho = 20
+
+    genzaichi = (0, 0)
 
     G = nx.Graph()  # ノード作成
     for i in range(n):
@@ -304,11 +285,9 @@ if __name__ == '__main__':
                                         if k - j == 1:
                                             G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
                                             G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
-                                            G.edges[(0, 0), (i + 1, k)]['ph'] = 1
                                     else:
                                         G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
                                         G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
-                                        G.edges[(0, 0), (i + 1, k)]['ph'] = 1
 
                                 if b == 1:
                                     break
@@ -326,11 +305,9 @@ if __name__ == '__main__':
                                         if k - j == 1:
                                             G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                             G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                            G.edges[(a, j), (i + 1, k)]['ph'] = 1
                                     else:
                                         G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                         G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                        G.edges[(a, j), (i + 1, k)]['ph'] = 1
                                 if b == 1:
                                     b = 0
                                     break
@@ -351,8 +328,7 @@ if __name__ == '__main__':
                             if j + distance_check <= k:
                                 b = 1
                                 G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
-                                G.edges[(i + 1, j), (n, T + 1)]['penalty'] =0
-                                G.edges[(i + 1, j), (n, T + 1)]['ph'] = 1
+                                G.edges[(i + 1, j), (n, T + 1)]['penalty'] = 0
                             if b == 1:
                                 break
 
@@ -360,7 +336,7 @@ if __name__ == '__main__':
         early_time = e[a]
         late_time = l[a]
 
-        add_node = range(early_time, late_time+Time_expand*kakucho)
+        add_node = range(early_time, late_time + Time_expand * kakucho)
         for j in add_node:
             if j % Time_expand == 0:
                 b = 0
@@ -368,7 +344,7 @@ if __name__ == '__main__':
                     if a == 0 and noriori[i + 1] > 0:
                         next_late_time = l[i + 1]
 
-                        next_add_node = range(next_late_time,next_late_time+Time_expand*kakucho)
+                        next_add_node = range(next_late_time, next_late_time + Time_expand * kakucho)
                         for k in next_add_node:
                             if k % Time_expand == 0:
                                 distance_check = math.ceil(Distance[a][i + 1])
@@ -378,48 +354,43 @@ if __name__ == '__main__':
                                         if k - j == 1:
                                             G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
                                             G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
-                                            G.edges[(0, 0), (i + 1, k)]['ph'] = 1
-
                                     else:
                                         G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
                                         G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
-                                        G.edges[(0, 0), (i + 1, k)]['ph'] = 1
                                 if b == 1:
                                     break
                     elif not a == 0:
                         next_late_time = l[i + 1]
 
-                        next_add_node = range(next_late_time,next_late_time+Time_expand*kakucho)
+                        next_add_node = range(next_late_time, next_late_time + Time_expand * kakucho)
                         for k in next_add_node:
                             if k % Time_expand == 0:
                                 distance_check = math.ceil(Distance[a][i + 1])
                                 if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
                                     b = 1
-                                    if not a == i+1:
+                                    if not a == i + 1:
                                         G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                         G.edges[(a, j), (i + 1, k)]['penalty'] = 1
-                                        G.edges[(a, j), (i + 1, k)]['ph'] = 1
                                 if b == 1:
-                                    b=0
+                                    b = 0
                                     break
         for i in range(n - 1):
             if noriori[i + 1] < 0:
                 early_time = e[i + 1]
                 late_time = l[i + 1]
 
-                add_node = range(early_time, late_time+Time_expand*kakucho)
+                add_node = range(early_time, late_time + Time_expand * kakucho)
                 for j in add_node:
                     if j % Time_expand == 0:
                         b = 0
-                        depo_repeat = range(l[0], l[0]+Time_expand*kakucho)
+                        depo_repeat = range(l[0], l[0] + Time_expand * kakucho)
                         for k in depo_repeat:
                             if k % Time_expand == 0:
                                 distance_check = math.ceil(Distance[i + 1][0])
                                 if j + distance_check <= k:
                                     b = 1
-                                    G.add_edge((i + 1, j), (n, T+1), weight=Distance[i + 1][0])
-                                    G.edges[(i + 1, j), (n, T+1)]['penalty'] = 1
-                                    G.edges[(i+1, j), (n, T+1)]['ph'] = 1
+                                    G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
+                                    G.edges[(i + 1, j), (n, T + 1)]['penalty'] = 1
                                 if b == 1:
                                     break
 
@@ -432,24 +403,14 @@ if __name__ == '__main__':
     print(nx.number_of_edges(G))
     print(nx.number_of_nodes(G))
 
-    genzaichi = (0, 0)
-    old_genzaichi = genzaichi
-    print(G.adj[genzaichi])
-    # print(G.adj[genzaichi][(1, 5)].values())
-    print(G.adj[genzaichi].values())
-    print(type(G.adj[genzaichi]))
-    main_loop = 0
+    '''
+idou_kanou=[]
+    for id, info in G.adj[(0,0)].items():
+        idou_kanou.append(id[0])
+    idou_kanou=set(idou_kanou)
+    print(idou_kanou)
+    print(random.choice(list(idou_kanou)))
+    '''
 
-    loot = [[] * 1 for i in range(6)]
-    print(loot)
-
-    kanryo_node = []
-    pick_kanryo_node =[]
-
-    test = return_random(G.adj[(47, 589)], (47, 589))
-    print(test)
-
-    ru_to =[2,3,5]
-
-    print(sharing_number_count(ru_to))
-
+    # test = return_random(G.adj[(47, 589)],(47, 589))
+    # print(test)
