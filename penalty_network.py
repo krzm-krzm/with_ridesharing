@@ -403,7 +403,7 @@ if __name__ == '__main__':
     print(time_expand)
     print(nx.number_of_edges(G))
     print(nx.number_of_nodes(G))
-
+    print(G.nodes())
     '''
 idou_kanou=[]
     for id, info in G.adj[(0,0)].items():
