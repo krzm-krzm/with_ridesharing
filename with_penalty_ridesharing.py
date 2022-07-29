@@ -205,10 +205,22 @@ return_random関数に関して
         例外処理：移動可能なノードがない場合デポを返す
 '''
 
+def drop_check(picking_list,next_location):
+    flag=0
+    if not picking_list ==[]:
+        dic = G.adj[next_location]
+        for id,info in dic.items():
+            if id[0] in picking_list:
+                flag +=1
+    else:
+        flag +=1
+
+    return flag
 
 def return_random(dic, now_location,capacity,picking_list):
     idou_kanou = []
     idou_list = []
+    next_limit = Setting_Info_base[9]
     saitan_drop_node =(10000,10000)
     random_return =(0,0)
     if noriori[now_location[0]] == 1 or noriori[now_location[0]] ==0:
@@ -228,7 +240,7 @@ def return_random(dic, now_location,capacity,picking_list):
                 random_return =(n,T+1)
         else:
             for id, info in dic.items():
-                if id[1] > now_location[1] and id[1] < now_location[1] + Setting_Info_base[9] and not id[0] == n and id[0] not in kanryo_node and check_node(id):
+                if id[1] > now_location[1] and id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id):
                     if noriori[id[0]] == 1:
                         idou_kanou.append(id)
                         idou_list.append(id[0])
@@ -245,7 +257,7 @@ def return_random(dic, now_location,capacity,picking_list):
                 print(randam)
                 idou_kanou = np.array(idou_kanou)
                 random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-                if random_return[1] > saitan_drop_node[1]:
+                if random_return[1] > saitan_drop_node[1] or drop_check(picking_list,random_return) ==0:
                     random_return = saitan_drop_node
                 print(random_return)
             else:
@@ -253,7 +265,7 @@ def return_random(dic, now_location,capacity,picking_list):
 
     else:
         for id, info in dic.items():
-            if id[1] > now_location[1] and id[1] < now_location[1] + Setting_Info_base[9] and not id[0] == n and id[0] not in kanryo_node and check_node(id) ==1:
+            if id[1] > now_location[1] and id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id) ==1:
                 if noriori[id[0]] ==1:
                     idou_kanou.append(id)
                     idou_list.append(id[0])
@@ -271,7 +283,7 @@ def return_random(dic, now_location,capacity,picking_list):
             print(randam)
             idou_kanou = np.array(idou_kanou)
             random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-            if random_return[1] > saitan_drop_node[1]:
+            if random_return[1] > saitan_drop_node[1] or drop_check(picking_list,random_return) ==0:
                 random_return = saitan_drop_node
             print(random_return)
         else:
@@ -523,6 +535,7 @@ if __name__ == '__main__':
         genzaichi = (0, 0)
         old_genzaichi = genzaichi
         capa =0
+        pick_now_node_list =[]
         while True:
             setuzoku_Node = return_random(G.adj[genzaichi], genzaichi,capa,pick_now_node_list)
             if not setuzoku_Node[0] ==n:
@@ -575,3 +588,5 @@ if __name__ == '__main__':
         kanryo_node = []
         if main_loop == len(loot):
             break
+
+    print(G.nodes())
