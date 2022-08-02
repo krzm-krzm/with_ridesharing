@@ -57,6 +57,202 @@ def Setting(FILENAME):
 
     return Setting_Info, request_number, depo_zahyo, c, e, l, noriori
 
+
+def network_creat(Time_expand,kakucho):
+    G = nx.Graph()  # ノード作成
+    for i in range(n):
+        early_time = e[i]
+        late_time = l[i]
+        if e[i] == 0:
+            early_time = 0
+        add_node = range(early_time, late_time)
+        if i == 0:
+            G.add_node((0, 0))
+        else:
+            for j in add_node:
+                if j % Time_expand == 0:
+                    G.add_node((i, j))
+    G.add_node((n, T + 1))
+    # G.add_edge((0,0),(1,5),weight=Setting_Info[3][0][1])
+
+    for a in range(n):
+        early_time = e[a]
+        late_time = l[a]
+
+        add_node = range(early_time, late_time)
+        for j in add_node:
+            if j % Time_expand == 0:
+                b = 0
+                for i in range(n - 1):  # 各ノードからdepoに帰るエッジがつくられていない & ここのループだとdepoのノード同士がつながらないので改善が必要
+                    if a == 0 and noriori[i + 1] > 0:
+                        next_early_time = e[i + 1]
+                        next_late_time = l[i + 1]
+
+                        next_add_node = range(next_early_time, next_late_time)
+                        for k in next_add_node:
+                            if k % Time_expand == 0:
+                                distance_check = math.ceil(Distance[a][i + 1])
+                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                    b = 1
+                                    if a == i + 1:
+                                        if k - j == 1:
+                                            G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
+                                            G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
+                                    else:
+                                        G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
+                                        G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
+
+                                if b == 1:
+                                    break
+                    elif not a == 0:
+                        if noriori[a] >0:
+                            next_early_time = e[i + 1]
+                            next_late_time = l[i + 1]
+                            connect_abs = l[a] - next_late_time
+                            if abs(connect_abs) <= Setting_Info_base[9]:
+                                next_add_node = range(next_early_time, next_late_time)
+                                for k in next_add_node:
+                                    if k % Time_expand == 0:
+                                        distance_check = math.ceil(Distance[a][i + 1])
+                                        if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                            b = 1
+                                            if a == i + 1:
+                                                if k - j == 1:
+                                                    G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
+                                                    G.edges[(a, j), (i + 1, k)]['penalty'] = 0
+                                            else:
+                                                G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
+                                                G.edges[(a, j), (i + 1, k)]['penalty'] = 0
+                                        if b == 1:
+                                            b = 0
+                                            break
+                        else:
+                            next_early_time = e[i + 1]
+                            next_late_time = l[i + 1]
+
+                            next_add_node = range(next_early_time, next_late_time)
+                            for k in next_add_node:
+                                if k % Time_expand == 0:
+                                    distance_check = math.ceil(Distance[a][i + 1])
+                                    if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                        b = 1
+                                        if a == i + 1:
+                                            if k - j == 1:
+                                                G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
+                                                G.edges[(a, j), (i + 1, k)]['penalty'] = 0
+                                        else:
+                                            G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
+                                            G.edges[(a, j), (i + 1, k)]['penalty'] = 0
+                                    if b == 1:
+                                        b = 0
+                                        break
+
+    for i in range(n - 1):
+        if noriori[i + 1] < 0:
+            early_time = e[i + 1]
+            late_time = l[i + 1]
+
+            add_node = range(early_time, late_time)
+            for j in add_node:
+                if j % Time_expand == 0:
+                    b = 0
+                    depo_repeat = range(early_time, l[0])
+                    for k in depo_repeat:
+                        if k % Time_expand == 0:
+                            distance_check = math.ceil(Distance[i + 1][0])
+                            if j + distance_check <= k:
+                                b = 1
+                                G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
+                                G.edges[(i + 1, j), (n, T + 1)]['penalty'] = 0
+                            if b == 1:
+                                break
+#以下ペナルティエッジの追加
+    for a in range(n):
+        early_time = e[a]
+        late_time = l[a]
+
+        add_node = range(early_time, late_time + Time_expand * kakucho)
+        for j in add_node:
+            if j % Time_expand == 0:
+                b = 0
+                for i in range(n - 1):  # 各ノードからdepoに帰るエッジがつくられていない & ここのループだとdepoのノード同士がつながらないので改善が必要
+                    if a == 0 and noriori[i + 1] > 0:
+                        next_late_time = l[i + 1]
+
+                        next_add_node = range(next_late_time, next_late_time + Time_expand * kakucho)
+                        for k in next_add_node:
+                            if k % Time_expand == 0:
+                                distance_check = math.ceil(Distance[a][i + 1])
+                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                    b = 1
+                                    if a == i + 1:
+                                        if k - j == 1:
+                                            G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
+                                            G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
+                                    else:
+                                        G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
+                                        G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
+                                if b == 1:
+                                    break
+                    elif not a == 0:
+                        if noriori[a] > 0:
+
+                            next_late_time = l[i + 1]
+                            connect_abs = l[a] - next_late_time
+                            if abs(connect_abs) <= Setting_Info_base[9]:
+                                next_add_node = range(next_late_time, next_late_time + Time_expand * kakucho)
+                                for k in next_add_node:
+                                    if k % Time_expand == 0:
+                                        distance_check = math.ceil(Distance[a][i + 1])
+                                        if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                            b = 1
+                                            if not a == i + 1:
+                                                G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
+                                                G.edges[(a, j), (i + 1, k)]['penalty'] = 1
+                                        if b == 1:
+                                            b = 0
+                                            break
+                        else:
+                            next_late_time = l[i + 1]
+
+                            next_add_node = range(next_late_time, next_late_time + Time_expand * kakucho)
+                            for k in next_add_node:
+                                if k % Time_expand == 0:
+                                    distance_check = math.ceil(Distance[a][i + 1])
+                                    if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                        b = 1
+                                        if not a == i + 1:
+                                            G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
+                                            G.edges[(a, j), (i + 1, k)]['penalty'] = 1
+                                    if b == 1:
+                                        b = 0
+                                        break
+        for i in range(n - 1):
+            if noriori[i + 1] < 0:
+                early_time = e[i + 1]
+                late_time = l[i + 1]
+
+                add_node = range(early_time, late_time + Time_expand * kakucho)
+                for j in add_node:
+                    if j % Time_expand == 0:
+                        b = 0
+                        depo_repeat = range(l[0], l[0] + Time_expand * kakucho)
+                        for k in depo_repeat:
+                            if k % Time_expand == 0:
+                                distance_check = math.ceil(Distance[i + 1][0])
+                                if j + distance_check <= k:
+                                    b = 1
+                                    G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
+                                    G.edges[(i + 1, j), (n, T + 1)]['penalty'] = 1
+                                if b == 1:
+                                    break
+
+    pos = {n: (n[1], -n[0]) for n in G.nodes()}  # ノードの座標に注意：X座標がノード番号、Y座標が時刻t
+
+    c_edge = ['red' if G.edges[(n)]['penalty'] == 1 else 'black' for n in G.edges()]
+
+    return G
+
 def setuzoku_node_list(dic):  # 移動できるノードの一覧辞書を返す関数、時間軸に関しては情報落ち
     node_dict = {}
     for id, info in dic.items():
@@ -288,6 +484,9 @@ def return_random(dic, now_location,capacity,picking_list):
             print(random_return)
         else:
             random_return = (n, T + 1)
+
+    if saitan_drop_node == (10000,10000):
+        random_return ==(n,T+1)
     return random_return
 
 
@@ -348,164 +547,12 @@ if __name__ == '__main__':
     d = 10  # 乗り降りにようする時間
     noriori = Setting_Info[6]
 
-    Time_expand = 1
+    time_expand = 1
 
-    kakucho =60
-
-    G = nx.Graph()  # ノード作成
-    for i in range(n):
-        early_time = e[i]
-        late_time = l[i]
-        if e[i] == 0:
-            early_time = 0
-        add_node = range(early_time, late_time)
-        if i == 0:
-            G.add_node((0, 0))
-        else:
-            for j in add_node:
-                if j % Time_expand == 0:
-                    G.add_node((i, j))
-    G.add_node((n, T + 1))
-    # G.add_edge((0,0),(1,5),weight=Setting_Info[3][0][1])
-
-    for a in range(n):
-        early_time = e[a]
-        late_time = l[a]
-
-        add_node = range(early_time, late_time)
-        for j in add_node:
-            if j % Time_expand == 0:
-                b = 0
-                for i in range(n - 1):  # 各ノードからdepoに帰るエッジがつくられていない & ここのループだとdepoのノード同士がつながらないので改善が必要
-                    if a == 0 and noriori[i + 1] > 0:
-                        next_early_time = e[i + 1]
-                        next_late_time = l[i + 1]
-
-                        next_add_node = range(next_early_time, next_late_time)
-                        for k in next_add_node:
-                            if k % Time_expand == 0:
-                                distance_check = math.ceil(Distance[a][i + 1])
-                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                    b = 1
-                                    if a == i + 1:
-                                        if k - j == 1:
-                                            G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
-                                            G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
-                                    else:
-                                        G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
-                                        G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
-
-                                if b == 1:
-                                    break
-                    elif not a == 0:
-                        next_early_time = e[i + 1]
-                        next_late_time = l[i + 1]
-
-                        next_add_node = range(next_early_time, next_late_time)
-                        for k in next_add_node:
-                            if k % Time_expand == 0:
-                                distance_check = math.ceil(Distance[a][i + 1])
-                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                    b = 1
-                                    if a == i + 1:
-                                        if k - j == 1:
-                                            G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
-                                            G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                    else:
-                                        G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
-                                        G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                if b == 1:
-                                    b = 0
-                                    break
-
-    for i in range(n - 1):
-        if noriori[i + 1] < 0:
-            early_time = e[i + 1]
-            late_time = l[i + 1]
-
-            add_node = range(early_time, late_time)
-            for j in add_node:
-                if j % Time_expand == 0:
-                    b = 0
-                    depo_repeat = range(early_time, l[0])
-                    for k in depo_repeat:
-                        if k % Time_expand == 0:
-                            distance_check = math.ceil(Distance[i + 1][0])
-                            if j + distance_check <= k:
-                                b = 1
-                                G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
-                                G.edges[(i + 1, j), (n, T + 1)]['penalty'] =0
-                            if b == 1:
-                                break
-
-    for a in range(n):
-        early_time = e[a]
-        late_time = l[a]
-
-        add_node = range(early_time, late_time+Time_expand*kakucho)
-        for j in add_node:
-            if j % Time_expand == 0:
-                b = 0
-                for i in range(n - 1):  # 各ノードからdepoに帰るエッジがつくられていない & ここのループだとdepoのノード同士がつながらないので改善が必要
-                    if a == 0 and noriori[i + 1] > 0:
-                        next_late_time = l[i + 1]
-
-                        next_add_node = range(next_late_time,next_late_time+Time_expand*kakucho)
-                        for k in next_add_node:
-                            if k % Time_expand == 0:
-                                distance_check = math.ceil(Distance[a][i + 1])
-                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                    b = 1
-                                    if a == i + 1:
-                                        if k - j == 1:
-                                            G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
-                                            G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
-                                    else:
-                                        G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
-                                        G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
-                                if b == 1:
-                                    break
-                    elif not a == 0:
-                        next_late_time = l[i + 1]
-
-                        next_add_node = range(next_late_time,next_late_time+Time_expand*kakucho)
-                        for k in next_add_node:
-                            if k % Time_expand == 0:
-                                distance_check = math.ceil(Distance[a][i + 1])
-                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                    b = 1
-                                    if not a == i+1:
-                                        G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
-                                        G.edges[(a, j), (i + 1, k)]['penalty'] = 1
-                                if b == 1:
-                                    b=0
-                                    break
-        for i in range(n - 1):
-            if noriori[i + 1] < 0:
-                early_time = e[i + 1]
-                late_time = l[i + 1]
-
-                add_node = range(early_time, late_time+Time_expand*kakucho)
-                for j in add_node:
-                    if j % Time_expand == 0:
-                        b = 0
-                        depo_repeat = range(l[0], l[0]+Time_expand*kakucho)
-                        for k in depo_repeat:
-                            if k % Time_expand == 0:
-                                distance_check = math.ceil(Distance[i + 1][0])
-                                if j + distance_check <= k:
-                                    b = 1
-                                    G.add_edge((i + 1, j), (n, T+1), weight=Distance[i + 1][0])
-                                    G.edges[(i + 1, j), (n, T+1)]['penalty'] = 1
-                                if b == 1:
-                                    break
-
-    pos = {n: (n[1], -n[0]) for n in G.nodes()}  # ノードの座標に注意：X座標がノード番号、Y座標が時刻t
-
-    c_edge = ['red' if G.edges[(n)]['penalty'] == 1 else 'black' for n in G.edges()]
+    G = network_creat(Time_expand=time_expand, kakucho=60)
 
     print(FILENAME)
-    print(Time_expand)
+    print(time_expand)
     print(nx.number_of_edges(G))
     print(nx.number_of_nodes(G))
 
@@ -523,14 +570,6 @@ if __name__ == '__main__':
     kanryo_node = []
     pick_now_node_list =[]
 
-
-    #test = return_random(G.adj[(47, 589)], (47, 589))
-    #print(test)
-
-    ru_to =[2,3,5]
-
-    print(sharing_number_count(ru_to))
-
     while True:
         genzaichi = (0, 0)
         old_genzaichi = genzaichi
@@ -544,26 +583,9 @@ if __name__ == '__main__':
                     capa +=1
                 else:
                     capa-=1
-            '''
-                if not setuzoku_Node == (n,T+1) and noriori[setuzoku_Node[0]] ==-1 and syaryo_time_check(loot[0]) >Syaryo_max_time:
-                loot[0].pop()
-                loot[0].pop()
-                break    
-            '''
-
+            if pick_now_node_list == [] and syaryo_time_check(loot[main_loop]) >=Syaryo_max_time:
+                break
             if setuzoku_Node == (n, T + 1):
-                '''
-                while True:
-                    if syaryo_time_check(loot[main_loop]) > Syaryo_max_time:
-                        loot[main_loop].pop()
-                        loot[main_loop].pop()
-                        kanryo_node.pop()
-                        loot[main_loop].pop()
-                        loot[main_loop].pop()
-                        kanryo_node.pop()
-                    else:
-                        break
-                    '''
                 break
 
             kanryo_node.append(setuzoku_Node[0])
