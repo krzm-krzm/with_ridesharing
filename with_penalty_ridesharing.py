@@ -5,7 +5,7 @@ import math
 from itertools import product
 import matplotlib.pyplot as plt
 import random
-
+import copy
 
 def distance(x1, x2, y1, y2):
     d = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -22,6 +22,7 @@ def Setting(FILENAME):
                 try:
                     num = float(tok)
                 except ValueError:
+
                     continue
                 row.append(num)
             mat.append(row)
@@ -60,6 +61,8 @@ def Setting(FILENAME):
 
 def network_creat(Time_expand,kakucho):
     G = nx.Graph()  # ノード作成
+
+
     for i in range(n):
         early_time = e[i]
         late_time = l[i]
@@ -98,54 +101,54 @@ def network_creat(Time_expand,kakucho):
                                         if k - j == 1:
                                             G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
                                             G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
+                                            G.edges[(0, 0), (i + 1, k)]['ph'] = 1 / k
+
                                     else:
                                         G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
                                         G.edges[(0, 0), (i + 1, k)]['penalty'] = 0
+                                        G.edges[(0, 0), (i + 1, k)]['ph'] = 1 / k
 
                                 if b == 1:
                                     break
-                    elif not a == 0:
-                        if noriori[a] >0:
+                    elif not a == 0 and not a - (i + 1) == Request:
+                        if noriori[a] > 0:
                             next_early_time = e[i + 1]
                             next_late_time = l[i + 1]
                             connect_abs = l[a] - next_late_time
                             if abs(connect_abs) <= Setting_Info_base[9]:
                                 next_add_node = range(next_early_time, next_late_time)
                                 for k in next_add_node:
-                                    if k % Time_expand == 0:
-                                        distance_check = math.ceil(Distance[a][i + 1])
-                                        if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                            b = 1
-                                            if a == i + 1:
-                                                if k - j == 1:
+                                    if k > j:
+                                        if k % Time_expand == 0:
+                                            distance_check = math.ceil(Distance[a][i + 1])
+                                            if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                                b = 1
+                                                if not a == i + 1:
                                                     G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                                     G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                            else:
-                                                G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
-                                                G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                        if b == 1:
-                                            b = 0
-                                            break
+                                                    G.edges[(a, j), (i + 1, k)]['ph'] = 1 / abs(j - k)
+
+                                            if b == 1:
+                                                b = 0
+                                                break
                         else:
                             next_early_time = e[i + 1]
                             next_late_time = l[i + 1]
 
                             next_add_node = range(next_early_time, next_late_time)
                             for k in next_add_node:
-                                if k % Time_expand == 0:
-                                    distance_check = math.ceil(Distance[a][i + 1])
-                                    if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                        b = 1
-                                        if a == i + 1:
-                                            if k - j == 1:
+                                if k > j:
+                                    if k % Time_expand == 0:
+                                        distance_check = math.ceil(Distance[a][i + 1])
+                                        if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
+                                            b = 1
+                                            if not a == i + 1:
                                                 G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                                 G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                        else:
-                                            G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
-                                            G.edges[(a, j), (i + 1, k)]['penalty'] = 0
-                                    if b == 1:
-                                        b = 0
-                                        break
+                                                G.edges[(a, j), (i + 1, k)]['ph'] = 1 / abs(j - k)
+                                        if b == 1:
+                                            b = 0
+                                            break
 
     for i in range(n - 1):
         if noriori[i + 1] < 0:
@@ -164,6 +167,7 @@ def network_creat(Time_expand,kakucho):
                                 b = 1
                                 G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
                                 G.edges[(i + 1, j), (n, T + 1)]['penalty'] = 0
+                                G.edges[(i + 1, j), (n, T + 1)]['ph'] = 1 / (T + 1 - j)
                             if b == 1:
                                 break
 #以下ペナルティエッジの追加
@@ -176,25 +180,8 @@ def network_creat(Time_expand,kakucho):
             if j % Time_expand == 0:
                 b = 0
                 for i in range(n - 1):  # 各ノードからdepoに帰るエッジがつくられていない & ここのループだとdepoのノード同士がつながらないので改善が必要
-                    if a == 0 and noriori[i + 1] > 0:
-                        next_late_time = l[i + 1]
 
-                        next_add_node = range(next_late_time, next_late_time + Time_expand * kakucho)
-                        for k in next_add_node:
-                            if k % Time_expand == 0:
-                                distance_check = math.ceil(Distance[a][i + 1])
-                                if distance_check + j <= k:  # このedgeを追加するコードは無駄な処理を含んでいます。直す必要アリ(5/10)
-                                    b = 1
-                                    if a == i + 1:
-                                        if k - j == 1:
-                                            G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
-                                            G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
-                                    else:
-                                        G.add_edge((0, 0), (i + 1, k), weight=Distance[a][i + 1])
-                                        G.edges[(0, 0), (i + 1, k)]['penalty'] = 1
-                                if b == 1:
-                                    break
-                    elif not a == 0:
+                    if not a == 0 and not a-(i+1) == Request:
                         if noriori[a] > 0:
 
                             next_late_time = l[i + 1]
@@ -209,6 +196,7 @@ def network_creat(Time_expand,kakucho):
                                             if not a == i + 1:
                                                 G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                                 G.edges[(a, j), (i + 1, k)]['penalty'] = 1
+                                                G.edges[(a, j), (i + 1, k)]['ph'] = 1 / abs(j - k)
                                         if b == 1:
                                             b = 0
                                             break
@@ -224,6 +212,7 @@ def network_creat(Time_expand,kakucho):
                                         if not a == i + 1:
                                             G.add_edge((a, j), (i + 1, k), weight=Distance[a][i + 1])
                                             G.edges[(a, j), (i + 1, k)]['penalty'] = 1
+                                            G.edges[(a, j), (i + 1, k)]['ph'] = 1 / abs(j - k)
                                     if b == 1:
                                         b = 0
                                         break
@@ -232,7 +221,7 @@ def network_creat(Time_expand,kakucho):
                 early_time = e[i + 1]
                 late_time = l[i + 1]
 
-                add_node = range(early_time, late_time + Time_expand * kakucho)
+                add_node = range(late_time, late_time + Time_expand * kakucho)
                 for j in add_node:
                     if j % Time_expand == 0:
                         b = 0
@@ -244,8 +233,10 @@ def network_creat(Time_expand,kakucho):
                                     b = 1
                                     G.add_edge((i + 1, j), (n, T + 1), weight=Distance[i + 1][0])
                                     G.edges[(i + 1, j), (n, T + 1)]['penalty'] = 1
+                                    G.edges[(i+1,j),(n,T+1)]['ph'] = 1/(T+1-j)
                                 if b == 1:
                                     break
+
 
     pos = {n: (n[1], -n[0]) for n in G.nodes()}  # ノードの座標に注意：X座標がノード番号、Y座標が時刻t
 
@@ -335,7 +326,7 @@ def setuzoku_node_list2(dic, now_location, previous_location):  #dic⇒接続可
 
 
 """
-#別のピックアップノードを入れたあと、以前のピックアップをドロップできるか判定する
+#現在地アップデートして大丈夫かどうか判定
 """
 
 
@@ -417,7 +408,7 @@ def return_random(dic, now_location,capacity,picking_list):
     idou_kanou = []
     idou_list = []
     next_limit = Setting_Info_base[9]
-    saitan_drop_node =(10000,10000)
+    saitan_drop_node =(n,T+1)
     random_return =(0,0)
     if noriori[now_location[0]] == 1 or noriori[now_location[0]] ==0:
         if noriori[now_location[0]] ==0:
@@ -429,8 +420,7 @@ def return_random(dic, now_location,capacity,picking_list):
                         if id[1] < saitan_drop_node[1]:
                             saitan_drop_node = id
 
-            print(idou_kanou)
-            print(idou_list)
+
             random_return =saitan_drop_node
             if saitan_drop_node ==(10000,10000):
                 random_return =(n,T+1)
@@ -446,22 +436,21 @@ def return_random(dic, now_location,capacity,picking_list):
                             idou_list.append(id[0])
                             if id[1] <saitan_drop_node[1]:
                                 saitan_drop_node = id
-            print(idou_kanou)
-            print(idou_list)
+
             if not idou_kanou == []:
                 randam = random.choice(list(set(idou_list)))
-                print(randam)
+
                 idou_kanou = np.array(idou_kanou)
                 random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
                 if random_return[1] > saitan_drop_node[1] or drop_check(picking_list,random_return) ==0:
                     random_return = saitan_drop_node
-                print(random_return)
+
             else:
                 random_return = (n, T + 1)
 
     else:
         for id, info in dic.items():
-            if id[1] > now_location[1] and id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id) ==1:
+            if id[1] > now_location[1]  and id[1] < now_location[1] + next_limit*1.5 and id[0] not in kanryo_node and check_node(id) ==1:
                 if noriori[id[0]] ==1:
                     idou_kanou.append(id)
                     idou_list.append(id[0])
@@ -472,65 +461,149 @@ def return_random(dic, now_location,capacity,picking_list):
                         if id[1] < saitan_drop_node[1]:
                             saitan_drop_node = id
 
-        print(idou_kanou)
-        print(idou_list)
+
         if not idou_kanou == []:
             randam = random.choice(list(set(idou_list)))
-            print(randam)
+
             idou_kanou = np.array(idou_kanou)
             random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
             if random_return[1] > saitan_drop_node[1] or drop_check(picking_list,random_return) ==0:
                 random_return = saitan_drop_node
-            print(random_return)
+
         else:
             random_return = (n, T + 1)
 
-    if saitan_drop_node == (10000,10000):
+    return random_return
+
+
+def return_kakuritsu(dic, now_location,capacity,picking_list):
+    idou_kanou = []
+    idou_kanou_time=[]
+    idou_kakuritsu = []
+    next_limit = Setting_Info_base[9]
+    capa_max =Setting_Info_base[4]
+    saitan_drop_node = (n, T + 1)
+    random_return = (0, 0)
+    if capacity < capa_max:
+        if noriori[now_location[0]] ==0:
+            for id, info in dic.items():
+                if not id[0] == n and check_node(id) ==1:
+                    if noriori[id[0]] ==1:
+                        if id[0] in idou_kanou:
+                            break
+                        idou_kanou.append(id[0])
+                        idou_kanou_time.append(id[1])
+                        idou_kakuritsu.append(list(info.values())[2])
+            random_return = probability_choice(now_location,idou_kanou,idou_kakuritsu,idou_kanou_time)
+        elif noriori[now_location[0]] ==1:
+            for id,info in dic.items():
+                if id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id):
+                    if id[0] in idou_kanou:
+                        break
+                    if noriori[id[0]] == 1:
+                        idou_kanou.append(id[0])
+                        idou_kanou_time.append(id[1])
+                        idou_kakuritsu.append(list(info.values())[2])
+                    else:
+                        if id[0] in picking_list:
+                            idou_kanou.append(id[0])
+                            idou_kanou_time.append(id[1])
+                            idou_kakuritsu.append(list(info.values())[2])
+            random_return = probability_choice(now_location, idou_kanou, idou_kakuritsu, idou_kanou_time)
+        elif noriori[now_location[0]] == -1:
+            for id,info in dic.items():
+                if not picking_list ==[]:
+                    if id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id):
+                        if id[0] in idou_kanou:
+                            break
+                        if noriori[id[0]] == 1:
+                            idou_kanou.append(id[0])
+                            idou_kanou_time.append(id[1])
+                            idou_kakuritsu.append(list(info.values())[2])
+                        else:
+                            if id[0] in picking_list:
+                                idou_kanou.append(id[0])
+                                idou_kanou_time.append(id[1])
+                                idou_kakuritsu.append(list(info.values())[2])
+                else:
+                    if id[0] not in kanryo_node and check_node(id):
+                        if id[0] in idou_kanou:
+                            break
+                        if noriori[id[0]] == 1:
+                            idou_kanou.append(id[0])
+                            idou_kanou_time.append(id[1])
+                            idou_kakuritsu.append(list(info.values())[2])
+                        else:
+                            if id[0] in picking_list:
+                                idou_kanou.append(id[0])
+                                idou_kanou_time.append(id[1])
+                                idou_kakuritsu.append(list(info.values())[2])
+            random_return = probability_choice(now_location, idou_kanou, idou_kakuritsu, idou_kanou_time)
+    else:
+        pass
+
+    if random_return == (0,0):
         random_return ==(n,T+1)
     return random_return
 
+def total_distance(loot):
+    Total = np.zeros(len(loot))
 
-def return_saitan(dic, now_location,capacity,picking_list):
-    idou_kanou = []
-    idou_list = []
-    if noriori[now_location[0]] == 1 or noriori[now_location[0]] ==0:
-        for id, info in dic.items():
-            if id[1] > now_location[1] and not id[0] == n :
-                if noriori[id[0]] ==1:
-                    idou_kanou.append(id)
-                    idou_list.append(id[0])
-                else:
-                    if id[0] in  picking_list:
-                        idou_kanou.append(id)
-                        idou_list.append(id[0])
+    for i in range(len(loot)):
+        if not loot[i] ==[]:
+            kyori =Distance[loot[i][0][0]][0] + Distance[loot[i][-1][0]][n-1]
+            Total[i] += kyori
+            for j in range(len(loot[i])-1):
+                kyori = Distance[loot[i][j][0]][loot[i][j+1][0]]
+                Total[i] += kyori
+    return Total
 
-        print(idou_kanou)
-        print(idou_list)
-        if not idou_kanou == []:
-            randam = random.choice(list(set(idou_list)))
-            print(randam)
-            idou_kanou = np.array(idou_kanou)
-            random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-            print(random_return)
-        else:
-            random_return = (n, T + 1)
+def daisu_check(loot):
+    number = 0
+    for i in range(len(loot)):
+        if not len(loot[i])==0:
+            number +=1
+    return number
+
+def probability_choice(now_location,idou_list,idou_probability,idou_kanou_time):
+    if not idou_list == []:
+        re_random =[]
+        kakuritsu_list = cal_kakuritsu(now_location,idou_list,pheromon=idou_probability)
+
+        random=np.random.choice(idou_list,p=kakuritsu_list)
+        index = idou_list.index(random)
+        re_random.append(random)
+        re_random.append(idou_kanou_time[index])
+        re_random =tuple(re_random)
     else:
-        for id, info in dic.items():
-            if id[1] > now_location[1] and not id[0] == n:
-                idou_kanou.append(id)
-                idou_list.append(id[0])
+        re_random =(n,T+1)
+    return re_random
 
-        print(idou_kanou)
-        print(idou_list)
-        if not idou_kanou == []:
-            randam = random.choice(list(set(idou_list)))
-            print(randam)
-            idou_kanou = np.array(idou_kanou)
-            random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-            print(random_return)
+def cal_kakuritsu(now_location,idou_list,pheromon):
+    kakuritsu_list =[]
+    sum=0
+    sum_sum =0
+    for i in range(len(pheromon)):
+        if noriori[idou_list[i]]==-1:
+            p = (pheromon[i]**alpha)*((Q/Distance[idou_list[i]][now_location[0]])**beta)+1/(l[idou_list[i]]-e[idou_list[i]])
+            kakuritsu_list.append(p)
+            sum +=p
         else:
-            random_return = (n, T + 1)
-    return random_return
+            p = (pheromon[i] ** alpha) * ((Q / Distance[idou_list[i]][now_location[0]]) ** beta)
+            kakuritsu_list.append(p)
+            sum += p
+    for i in range(len(kakuritsu_list)):
+        if i ==0:
+            kakuritsu_list[i] = kakuritsu_list[i]/sum
+            sum_sum += kakuritsu_list[i]
+        elif i == range(len(kakuritsu_list)):
+            kakuritsu_list[i] = 1-sum_sum
+        else:
+            kakuritsu_list[i] = kakuritsu_list[i]/sum
+            sum_sum += kakuritsu_list[i]
+
+
+    return kakuritsu_list
 
 if __name__ == '__main__':
     FILENAME = 'darp01EX.txt'
@@ -544,13 +617,18 @@ if __name__ == '__main__':
     Distance = Setting_Info[3]  # 距離
     e = Setting_Info[4]  # early time
     l = Setting_Info[5]  # delay time
-    d = 10  # 乗り降りにようする時間
+    d = 5  # 乗り降りにようする時間
     noriori = Setting_Info[6]
 
     time_expand = 1
 
-    G = network_creat(Time_expand=time_expand, kakucho=60)
+    G = network_creat(Time_expand=time_expand, kakucho=20)
 
+    G_copy = copy.deepcopy(G)
+
+    alpha =1
+    beta=1
+    Q =1
     print(FILENAME)
     print(time_expand)
     print(nx.number_of_edges(G))
@@ -562,53 +640,72 @@ if __name__ == '__main__':
     # print(G.adj[genzaichi][(1, 5)].values())
     print(G.adj[genzaichi].values())
     print(type(G.adj[genzaichi]))
-    main_loop = 0
 
-    loot = [[] * 1 for i in range(10)]
-    print(loot)
-
-    kanryo_node = []
-    pick_now_node_list =[]
-
+    roop =0
+    data = np.zeros((500,2))
+    opt = 10000
+    opt_loot =[]
     while True:
-        genzaichi = (0, 0)
-        old_genzaichi = genzaichi
-        capa =0
+        G = copy.deepcopy(G_copy)
+        main_loop = 0
+
+        loot = [[] * 1 for i in range(10)]
+
+
+        kanryo_node = []
         pick_now_node_list =[]
         while True:
-            setuzoku_Node = return_random(G.adj[genzaichi], genzaichi,capa,pick_now_node_list)
-            if not setuzoku_Node[0] ==n:
-                pick_now_node_list = update_pick_node(setuzoku_Node,pick_now_node_list)
-                if noriori[setuzoku_Node[0]] ==1:
-                    capa +=1
-                else:
-                    capa-=1
-            if pick_now_node_list == [] and syaryo_time_check(loot[main_loop]) >=Syaryo_max_time:
-                break
-            if setuzoku_Node == (n, T + 1):
-                break
-
-            kanryo_node.append(setuzoku_Node[0])
-
+            genzaichi = (0, 0)
             old_genzaichi = genzaichi
-            genzaichi = setuzoku_Node
+            capa =0
+            pick_now_node_list =[]
+            while True:
+                setuzoku_Node = return_kakuritsu(G.adj[genzaichi], genzaichi,capa,pick_now_node_list)
+                if not setuzoku_Node[0] ==n:
+                    pick_now_node_list = update_pick_node(setuzoku_Node,pick_now_node_list)
+                    if noriori[setuzoku_Node[0]] ==1:
+                        capa +=1
+                    else:
+                        capa-=1
+                if pick_now_node_list == [] and syaryo_time_check(loot[main_loop]) >=Syaryo_max_time:
+                    break
+                if setuzoku_Node == (n, T + 1):
+                    break
 
-            loot[main_loop].append(genzaichi)
+                kanryo_node.append(setuzoku_Node[0])
 
-            genzaichi = genzaichi_update(genzaichi)
-            loot[main_loop].append(genzaichi)
+                old_genzaichi = genzaichi
+                genzaichi = setuzoku_Node
 
-            # if main_loop == 3:
-            #    break
+                loot[main_loop].append(genzaichi)
 
-        print(loot[main_loop])
-        print(loot)
-        print(syaryo_time_check(loot[main_loop]))
-        print(kanryo_node)
-        network_update(G, kanryo_node)
-        main_loop += 1
-        kanryo_node = []
-        if main_loop == len(loot):
+                genzaichi = genzaichi_update(genzaichi)
+                loot[main_loop].append(genzaichi)
+
+                # if main_loop == 3:
+                #    break
+
+            #print(loot[main_loop])
+            #print(loot)
+            #print(syaryo_time_check(loot[main_loop]))
+            #print(kanryo_node)
+            network_update(G, kanryo_node)
+            main_loop += 1
+            kanryo_node = []
+            if main_loop == len(loot):
+                break
+
+        if len(G.nodes())==2:
+            sum = np.sum(total_distance(loot))
+            if sum <=opt:
+                data[roop][0] = sum
+                data[roop][1] = daisu_check(loot)
+                opt_loot = loot
+                opt =sum
+        roop +=1
+        if roop ==1:
             break
-
-    print(G.nodes())
+    print(loot)
+    print(total_distance(opt_loot))
+    print(kanryo_node)
+    #np.savetxt('/Users/kurozumi ryouho/Desktop/benchmark2/kekka/' + FILENAME + 'ans.csv', data, delimiter=",")
