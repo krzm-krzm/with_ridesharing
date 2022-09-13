@@ -189,7 +189,9 @@ def network_creat(Time_expand, kakucho):
                             if b == 1:
                                 break
     pos = {n: (n[1], -n[0]) for n in G.nodes()}  # ノードの座標に注意：X座標がノード番号、Y座標が時刻t
-
+    nx.draw_networkx_nodes(G, pos, node_size=10, alpha=1, node_color='blue')
+    nx.draw_networkx_edges(G, pos, width=1)
+    plt.show()
     return G
 
 

@@ -6,6 +6,7 @@ from itertools import product
 import matplotlib.pyplot as plt
 import random
 import copy
+import time
 
 def distance(x1, x2, y1, y2):
     d = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -244,92 +245,6 @@ def network_creat(Time_expand,kakucho):
 
     return G
 
-def setuzoku_node_list(dic):  # 移動できるノードの一覧辞書を返す関数、時間軸に関しては情報落ち
-    node_dict = {}
-    for id, info in dic.items():
-        print(id, info.values())
-        node_dict.setdefault(id[0], info.values())
-
-    return node_dict
-
-
-"""
-関数setuzoku_nodeについて
-二個目のノードから再び(0,0)のノードが選ばれてしまうので何かしら分岐が必要
-・ピックアップノードからデポに戻るの禁止
-    ＊デポ以外の近いところを選択、どうしてもない場合、ドロップノードに行く
-・6/20
-    ＊ピックアップノードから関係ないドロップノードにいってしまう
-    *
-・6/21 
-    *方向性を転換⇒時間窓の早い顧客から詰め込む
-"""
-
-
-def setuzoku_node_list2(dic, now_location, previous_location):  #dic⇒接続可能なノード先(G.adj[n])
-    min_weight = float('inf')
-    min_earlytime = float('inf')
-    saitan_setuzoku_node = (0, 0)
-    drop_kouho = (0, 0)
-    loop = 0
-    if genzaichi == (0, 0):
-        for id, info in dic.items():
-            # print(id, info.values())
-            if loop == 0:
-                saitan_setuzoku_node = id
-                min_earlytime = id[1]
-            else:
-                if id[1] < min_earlytime:
-                    saitan_setuzoku_node = id
-                    min_earlytime = id[1]
-
-            loop += 1
-    elif noriori[now_location[0]] == 1:  # 現在地がピックアップノードのとき
-        for id, info in dic.items():
-            # print(id, info.values())
-            if id[0] == now_location[0] + Request:
-                drop_kouho = id
-                saitan_setuzoku_node = drop_kouho
-                break
-            loop += 1
-
-
-    elif noriori[now_location[0]] == -1:
-        for id, info in dic.items():
-            # print(id, info.values())
-            if loop == 0:
-                if not id[0] == n:
-                    if not id == previous_location and noriori[id[0]] == 1 and (id[0] in kanryo_node) == False and id[
-                        1] > now_location[1]:   #候補が以前の場所ではない & ピックアップノードである & 　挿入済みのノードではない & 現在の時間より大きいノードである
-                        if check_node(id, now_location) == 1:
-                            saitan_setuzoku_node = id
-                            min_earlytime = id[1]
-                else:
-                    break
-            else:
-                if id[0] == n:
-                    if not id == previous_location and noriori[0] == 1:
-                        if id[1] < min_earlytime:
-                            saitan_setuzoku_node = id
-                            min_earlytime = id[1]
-                else:
-                    if not id == previous_location and noriori[id[0]] == 1 and (id[0] in kanryo_node) == False and id[
-                        1] > now_location[1]:
-                        if check_node(id, now_location) == 1:
-                            if id[1] < min_earlytime:
-                                saitan_setuzoku_node = id
-                                min_earlytime = id[1]
-            loop += 1
-    if saitan_setuzoku_node == (0, 0):
-        saitan_setuzoku_node = (n, T + 1)
-    return saitan_setuzoku_node
-
-
-"""
-#現在地アップデートして大丈夫かどうか判定
-"""
-
-
 def check_node(next_location_id):
     flag = 1
     next_location_id = genzaichi_update(next_location_id)
@@ -340,12 +255,10 @@ def check_node(next_location_id):
 
     return flag
 
-
 def genzaichi_update(tup):
     tup_new = list(tup)
     tup_new[1] = tup_new[1] + d
     return tuple(tup_new)
-
 
 def syaryo_time_check(Loot):
     syaryo_time = 0
@@ -354,15 +267,15 @@ def syaryo_time_check(Loot):
     return syaryo_time
 
 def sharing_number_count(Loot):
-    number_count=0
+    number_count = 0
     for i in Loot:
-        number_count+=noriori[i]
+        number_count += noriori[i]
 
-    return  number_count
+    return number_count
 
-def update_pick_node(next_node,pick_list):
-    if noriori[next_node[0]] ==1:
-        pick_list.append(next_node[0]+Request)
+def update_pick_node(next_node, pick_list):
+    if noriori[next_node[0]] == 1:
+        pick_list.append(next_node[0] + Request)
     else:
         pick_list.remove(next_node[0])
 
@@ -374,13 +287,11 @@ def update_pick_node(next_node,pick_list):
 一台分のルートが完成してから削除しましょう
 """
 
-
 def network_update(network, removenode):
     for i in list(network.nodes()):
         for j in removenode:
             if i[0] == j:
                 network.remove_node(i)
-
 
 '''
 return_random関数に関して
@@ -392,41 +303,41 @@ return_random関数に関して
         例外処理：移動可能なノードがない場合デポを返す
 '''
 
-def drop_check(picking_list,next_location):
-    flag=0
-    if not picking_list ==[]:
+def drop_check(picking_list, next_location):
+    flag = 0
+    if not picking_list == []:
         dic = G.adj[next_location]
-        for id,info in dic.items():
+        for id, info in dic.items():
             if id[0] in picking_list:
-                flag +=1
+                flag += 1
     else:
-        flag +=1
+        flag += 1
 
     return flag
 
-def return_random(dic, now_location,capacity,picking_list):
+def return_random(dic, now_location, capacity, picking_list):
     idou_kanou = []
     idou_list = []
     next_limit = Setting_Info_base[9]
-    saitan_drop_node =(n,T+1)
-    random_return =(0,0)
-    if noriori[now_location[0]] == 1 or noriori[now_location[0]] ==0:
-        if noriori[now_location[0]] ==0:
+    saitan_drop_node = (n, T + 1)
+    random_return = (0, 0)
+    if noriori[now_location[0]] == 1 or noriori[now_location[0]] == 0:
+        if noriori[now_location[0]] == 0:
             for id, info in dic.items():
-                if id[1] > now_location[1] and not id[0] == n and check_node(id) ==1:
-                    if noriori[id[0]] ==1:
+                if id[1] > now_location[1] and not id[0] == n and check_node(id) == 1:
+                    if noriori[id[0]] == 1:
                         idou_kanou.append(id)
                         idou_list.append(id[0])
                         if id[1] < saitan_drop_node[1]:
                             saitan_drop_node = id
 
-
-            random_return =saitan_drop_node
-            if saitan_drop_node ==(10000,10000):
-                random_return =(n,T+1)
+            random_return = saitan_drop_node
+            if saitan_drop_node == (10000, 10000):
+                random_return = (n, T + 1)
         else:
             for id, info in dic.items():
-                if id[1] > now_location[1] and id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id):
+                if id[1] > now_location[1] and id[1] < now_location[1] + next_limit and not id[0] == n and id[
+                    0] not in kanryo_node and check_node(id):
                     if noriori[id[0]] == 1:
                         idou_kanou.append(id)
                         idou_list.append(id[0])
@@ -434,7 +345,7 @@ def return_random(dic, now_location,capacity,picking_list):
                         if id[0] in picking_list:
                             idou_kanou.append(id)
                             idou_list.append(id[0])
-                            if id[1] <saitan_drop_node[1]:
+                            if id[1] < saitan_drop_node[1]:
                                 saitan_drop_node = id
 
             if not idou_kanou == []:
@@ -442,7 +353,7 @@ def return_random(dic, now_location,capacity,picking_list):
 
                 idou_kanou = np.array(idou_kanou)
                 random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-                if random_return[1] > saitan_drop_node[1] or drop_check(picking_list,random_return) ==0:
+                if random_return[1] > saitan_drop_node[1] or drop_check(picking_list, random_return) == 0:
                     random_return = saitan_drop_node
 
             else:
@@ -450,24 +361,24 @@ def return_random(dic, now_location,capacity,picking_list):
 
     else:
         for id, info in dic.items():
-            if id[1] > now_location[1]  and id[1] < now_location[1] + next_limit*1.5 and id[0] not in kanryo_node and check_node(id) ==1:
-                if noriori[id[0]] ==1:
+            if id[1] > now_location[1] and id[1] < now_location[1] + next_limit * 1.5 and id[
+                0] not in kanryo_node and check_node(id) == 1:
+                if noriori[id[0]] == 1:
                     idou_kanou.append(id)
                     idou_list.append(id[0])
                 else:
-                    if id[0] in  picking_list:
+                    if id[0] in picking_list:
                         idou_kanou.append(id)
                         idou_list.append(id[0])
                         if id[1] < saitan_drop_node[1]:
                             saitan_drop_node = id
-
 
         if not idou_kanou == []:
             randam = random.choice(list(set(idou_list)))
 
             idou_kanou = np.array(idou_kanou)
             random_return = tuple(idou_kanou[np.any(idou_kanou == randam, axis=1)][0])
-            if random_return[1] > saitan_drop_node[1] or drop_check(picking_list,random_return) ==0:
+            if random_return[1] > saitan_drop_node[1] or drop_check(picking_list, random_return) == 0:
                 random_return = saitan_drop_node
 
         else:
@@ -475,29 +386,32 @@ def return_random(dic, now_location,capacity,picking_list):
 
     return random_return
 
-
-def return_kakuritsu(dic, now_location,capacity,picking_list):
+def return_kakuritsu(dic, now_location, capacity, picking_list):
     idou_kanou = []
-    idou_kanou_time=[]
+    idou_kanou_time = []
     idou_kakuritsu = []
     next_limit = Setting_Info_base[9]
-    capa_max =Setting_Info_base[4]
+    capa_max = Setting_Info_base[4]
     saitan_drop_node = (n, T + 1)
     random_return = (0, 0)
     if capacity < capa_max:
-        if noriori[now_location[0]] ==0:
+        if noriori[now_location[0]] == 0:
             for id, info in dic.items():
-                if not id[0] == n and check_node(id) ==1:
-                    if noriori[id[0]] ==1:
+                if not id[0] == n and check_node(id) == 1:
+                    if noriori[id[0]] == 1:
                         if id[0] in idou_kanou:
                             break
                         idou_kanou.append(id[0])
                         idou_kanou_time.append(id[1])
                         idou_kakuritsu.append(list(info.values())[2])
-            random_return = probability_choice(now_location,idou_kanou,idou_kakuritsu,idou_kanou_time)
-        elif noriori[now_location[0]] ==1:
-            for id,info in dic.items():
-                if id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id):
+            if not idou_kanou == []:
+                random_return = saisyo(idou_kanou[idou_kanou_time.index(min(idou_kanou_time))],
+                                       min(idou_kanou_time))
+
+        elif noriori[now_location[0]] == 1:
+            for id, info in dic.items():
+                if id[1] < now_location[1] + next_limit and not id[0] == n and id[
+                    0] not in kanryo_node and check_node(id):
                     if id[0] in idou_kanou:
                         break
                     if noriori[id[0]] == 1:
@@ -511,9 +425,10 @@ def return_kakuritsu(dic, now_location,capacity,picking_list):
                             idou_kakuritsu.append(list(info.values())[2])
             random_return = probability_choice(now_location, idou_kanou, idou_kakuritsu, idou_kanou_time)
         elif noriori[now_location[0]] == -1:
-            for id,info in dic.items():
-                if not picking_list ==[]:
-                    if id[1] < now_location[1] + next_limit and not id[0] == n and id[0] not in kanryo_node and check_node(id):
+            for id, info in dic.items():
+                if not picking_list == []:
+                    if id[1] < now_location[1] + next_limit and not id[0] == n and id[
+                        0] not in kanryo_node and check_node(id):
                         if id[0] in idou_kanou:
                             break
                         if noriori[id[0]] == 1:
@@ -542,70 +457,76 @@ def return_kakuritsu(dic, now_location,capacity,picking_list):
     else:
         pass
 
-    if random_return == (0,0):
-        random_return ==(n,T+1)
+    if random_return == (0, 0):
+        random_return = (n, T + 1)
     return random_return
+
+def saisyo(saisyo_kyaku, saisyo_time):
+    re_saisyo = [saisyo_kyaku, saisyo_time]
+    re_saisyo = tuple(re_saisyo)
+    return re_saisyo
 
 def total_distance(loot):
     Total = np.zeros(len(loot))
 
     for i in range(len(loot)):
-        if not loot[i] ==[]:
-            kyori =Distance[loot[i][0][0]][0] + Distance[loot[i][-1][0]][n-1]
+        if not loot[i] == []:
+            kyori = Distance[loot[i][0][0]][0] + Distance[loot[i][-1][0]][n - 1]
             Total[i] += kyori
-            for j in range(len(loot[i])-1):
-                kyori = Distance[loot[i][j][0]][loot[i][j+1][0]]
+            for j in range(len(loot[i]) - 1):
+                kyori = Distance[loot[i][j][0]][loot[i][j + 1][0]]
                 Total[i] += kyori
     return Total
 
 def daisu_check(loot):
     number = 0
     for i in range(len(loot)):
-        if not len(loot[i])==0:
-            number +=1
+        if not len(loot[i]) == 0:
+            number += 1
     return number
 
-def probability_choice(now_location,idou_list,idou_probability,idou_kanou_time):
+def probability_choice(now_location, idou_list, idou_probability, idou_kanou_time):
     if not idou_list == []:
-        re_random =[]
-        kakuritsu_list = cal_kakuritsu(now_location,idou_list,pheromon=idou_probability)
+        re_random = []
+        kakuritsu_list = cal_kakuritsu(now_location, idou_list, pheromon=idou_probability)
 
-        random=np.random.choice(idou_list,p=kakuritsu_list)
+        random = np.random.choice(idou_list, p=kakuritsu_list)
         index = idou_list.index(random)
         re_random.append(random)
         re_random.append(idou_kanou_time[index])
-        re_random =tuple(re_random)
+        re_random = tuple(re_random)
     else:
-        re_random =(n,T+1)
+        re_random = (n, T + 1)
     return re_random
 
-def cal_kakuritsu(now_location,idou_list,pheromon):
-    kakuritsu_list =[]
-    sum=0
-    sum_sum =0
+def cal_kakuritsu(now_location, idou_list, pheromon):
+    kakuritsu_list = []
+    sum = 0
+    sum_sum = 0
     for i in range(len(pheromon)):
-        if noriori[idou_list[i]]==-1:
-            p = (pheromon[i]**alpha)*((Q/Distance[idou_list[i]][now_location[0]])**beta)+1/(l[idou_list[i]]-e[idou_list[i]])
+        if noriori[idou_list[i]] == -1:
+            p = (pheromon[i] ** alpha) * ((Q / Distance[idou_list[i]][now_location[0]]) ** beta) + 1 / (
+                        l[idou_list[i]] - e[idou_list[i]])
             kakuritsu_list.append(p)
-            sum +=p
+            sum += p
         else:
             p = (pheromon[i] ** alpha) * ((Q / Distance[idou_list[i]][now_location[0]]) ** beta)
             kakuritsu_list.append(p)
             sum += p
     for i in range(len(kakuritsu_list)):
-        if i ==0:
-            kakuritsu_list[i] = kakuritsu_list[i]/sum
+        if i == 0:
+            kakuritsu_list[i] = kakuritsu_list[i] / sum
             sum_sum += kakuritsu_list[i]
         elif i == range(len(kakuritsu_list)):
-            kakuritsu_list[i] = 1-sum_sum
+            kakuritsu_list[i] = 1 - sum_sum
         else:
-            kakuritsu_list[i] = kakuritsu_list[i]/sum
+            kakuritsu_list[i] = kakuritsu_list[i] / sum
             sum_sum += kakuritsu_list[i]
-
 
     return kakuritsu_list
 
 if __name__ == '__main__':
+    t1=time.time()
     FILENAME = 'darp01EX.txt'
     Setting_Info = Setting(FILENAME)
     Setting_Info_base = Setting_Info[0]
@@ -622,13 +543,13 @@ if __name__ == '__main__':
 
     time_expand = 1
 
-    G = network_creat(Time_expand=time_expand, kakucho=20)
+    G = network_creat(Time_expand=time_expand, kakucho=30)
 
     G_copy = copy.deepcopy(G)
 
-    alpha =1
-    beta=1
-    Q =1
+    alpha = 1
+    beta = 1
+    Q = 1
     print(FILENAME)
     print(time_expand)
     print(nx.number_of_edges(G))
@@ -640,34 +561,35 @@ if __name__ == '__main__':
     # print(G.adj[genzaichi][(1, 5)].values())
     print(G.adj[genzaichi].values())
     print(type(G.adj[genzaichi]))
-
-    roop =0
-    data = np.zeros((500,2))
+    roop = 0
+    data = np.zeros((500, 2))
     opt = 10000
-    opt_loot =[]
+    opt_loot = []
+    misounyu = []
+    misounyu_2 = []
+    t3 = time.time()
     while True:
         G = copy.deepcopy(G_copy)
         main_loop = 0
 
         loot = [[] * 1 for i in range(10)]
 
-
         kanryo_node = []
-        pick_now_node_list =[]
+        pick_now_node_list = []
         while True:
             genzaichi = (0, 0)
             old_genzaichi = genzaichi
-            capa =0
-            pick_now_node_list =[]
+            capa = 0
+            pick_now_node_list = []
             while True:
-                setuzoku_Node = return_kakuritsu(G.adj[genzaichi], genzaichi,capa,pick_now_node_list)
-                if not setuzoku_Node[0] ==n:
-                    pick_now_node_list = update_pick_node(setuzoku_Node,pick_now_node_list)
-                    if noriori[setuzoku_Node[0]] ==1:
-                        capa +=1
+                setuzoku_Node = return_kakuritsu(G.adj[genzaichi], genzaichi, capa, pick_now_node_list)
+                if not setuzoku_Node[0] == n:
+                    pick_now_node_list = update_pick_node(setuzoku_Node, pick_now_node_list)
+                    if noriori[setuzoku_Node[0]] == 1:
+                        capa += 1
                     else:
-                        capa-=1
-                if pick_now_node_list == [] and syaryo_time_check(loot[main_loop]) >=Syaryo_max_time:
+                        capa -= 1
+                if pick_now_node_list == [] and syaryo_time_check(loot[main_loop]) >= Syaryo_max_time:
                     break
                 if setuzoku_Node == (n, T + 1):
                     break
@@ -685,27 +607,32 @@ if __name__ == '__main__':
                 # if main_loop == 3:
                 #    break
 
-            #print(loot[main_loop])
-            #print(loot)
-            #print(syaryo_time_check(loot[main_loop]))
-            #print(kanryo_node)
+            # print(loot[main_loop])
+            # print(loot)
+            # print(syaryo_time_check(loot[main_loop]))
+            # print(kanryo_node)
             network_update(G, kanryo_node)
             main_loop += 1
+            misounyu_2.append(kanryo_node)
             kanryo_node = []
-            if main_loop == len(loot):
+            misounyu.append(pick_now_node_list)
+            if main_loop == 3:
                 break
-
-        if len(G.nodes())==2:
-            sum = np.sum(total_distance(loot))
-            if sum <=opt:
-                data[roop][0] = sum
-                data[roop][1] = daisu_check(loot)
-                opt_loot = loot
-                opt =sum
-        roop +=1
-        if roop ==1:
+        roop += 1
+        if roop == 1:
             break
+    t2=time.time()
+    print(f"time:{t2-t1}")
+    print(f"time{t2-t3}")
     print(loot)
     print(total_distance(opt_loot))
-    print(kanryo_node)
+    print(misounyu)
+    syaryo = 0
+    for i in range(len(loot)):
+        if not loot[i] == []:
+            syaryo += 1
+    print(syaryo)
+    kokyaku_node = range(1, 49)
+    print(sum(misounyu_2, []))
+    print(set(kokyaku_node) ^ set(sum(misounyu_2, [])))
     #np.savetxt('/Users/kurozumi ryouho/Desktop/benchmark2/kekka/' + FILENAME + 'ans.csv', data, delimiter=",")
